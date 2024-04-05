@@ -1,0 +1,16 @@
+FROM ubuntu:20.04
+
+RUN apt-get update -y
+RUN apt-get install -y python3-pip python3-dev build-essential 
+RUN apt-get install -y python3-tk
+
+WORKDIR /acm
+COPY . .
+
+RUN pip install -r requirements.txt
+
+# RUN chmod +x /acm/ynetd
+
+EXPOSE 12345
+# CMD ./ynetd -p 1228 "python3 sudoku.py"
+CMD ["python3" ,"sudoku.py"]

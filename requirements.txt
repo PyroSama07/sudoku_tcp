@@ -1,0 +1,3 @@
+numpy
+sudokum==0.0.1
+tk
