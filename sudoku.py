@@ -1,8 +1,7 @@
-import sudokum, sys
+import sudokum
 import socket
 import threading
 import numpy as np
-import time
 
 
 def verify_sudoku_size(out_sudoku):
@@ -77,93 +76,61 @@ def conver_to_list(striped_input_string):
 def list_to_string(input_list):
     if isinstance(input_list, list):
         inner_strings = [list_to_string(item) for item in input_list]
-        return "[" + ", ".join(inner_strings) + "]"
+        return "[" + ", ".join(inner_strings) + "]" 
     else:
         return str(input_list)
-    
-def sudoku_give():
-    try:
-        input_sudoku = sudokum.generate(mask_rate=0)
-        print (input_sudoku)
-
-        output_sudoku = input()
-        output_sudoku = strip_string(output_sudoku)
-        if len(output_sudoku)!=81:
-            print("Bad Job")
-            return False
-
-        output_sudoku = conver_to_list(output_sudoku)
-
-        if verify_sudoku(input_sudoku,output_sudoku):
-            print("Good Job")
-            return True
-
-        return False
-    
-    except:
-        sys.exit(0)
-
 
 def handle_client(client_socket):
     # Generate a sudoku puzzle
-    num_sud = 10
+    num_sud = 42
+    count = 0
     client_socket.send("Here is your sudoku, Have fun XD\n".encode())
     client_socket.send("Enter Ans in Same Format\n".encode())
 
-    for i in range(num_sud):
-        input_sudoku = sudokum.generate(mask_rate=0)
+    try:
+        for i in range(num_sud):
+            input_sudoku = sudokum.generate(mask_rate=0.6)
 
-        # Send the puzzle to the client
-        client_socket.send(list_to_string(input_sudoku).encode())
+            # Send the puzzle to the client
+            client_socket.send(list_to_string(input_sudoku).encode())
 
-        # Receive the solution from the client
-        output_sudoku = client_socket.recv(1024).decode().strip()
-        output_sudoku = strip_string(output_sudoku)
+            # Receive the solution from the client
+            output_sudoku = client_socket.recv(1024).decode().strip()
+            output_sudoku = strip_string(output_sudoku)
 
-        if len(output_sudoku)!=81:
-            client_socket.send("Incorrect solution. Try again.".encode())
-                
-        output_sudoku = conver_to_list(output_sudoku)
-        # Verify the solution
-        if verify_sudoku(input_sudoku,output_sudoku):
-            client_socket.send("\nCorrect! Congratulations!\n".encode())
-        else:
-            client_socket.send("Incorrect solution.".encode())
-            client_socket.close()
-            break
+            if len(output_sudoku)!=81:
+                client_socket.send("Incorrect solution. Try again.".encode())
+                client_socket.close()
+                    
+            output_sudoku = conver_to_list(output_sudoku)
+            # Verify the solution
+            if verify_sudoku(input_sudoku,output_sudoku):
+                client_socket.send("Correct! Congratulations!\n".encode())
+                count=count+1
+            else:
+                client_socket.send("Incorrect solution.".encode())
+                client_socket.close()
+                break
+        
+        if count==num_sud:
+            client_socket.send("\nHere is your flag\n4cmc{br0_1s_4_g3n1u5_R1zzl3R}".encode())
+
+    except:
+        client_socket.send("Incorrect solution.".encode())
 
     client_socket.close()
-        # Close the client socket
 
-# Create a TCP socket
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-# Bind the socket to a host and port
-server_socket.bind(('localhost', 12345))
+server_socket.bind(('0.0.0.0', 12345))
 
-# Listen for incoming connections
 server_socket.listen(1000)
 
-print("[*] Listening on localhost:12345")
+print("[*] Listening on 0.0.0.0:12345")
 
 while True:
     # Accept incoming connection
     client_socket, addr = server_socket.accept()
     print(f"[*] Accepted connection from {addr[0]}:{addr[1]}")
-
-    # Start a new thread to handle the client
     client_handler = threading.Thread(target=handle_client, args=(client_socket,))
     client_handler.start()
-
-# if __name__=='__main__':
-#     print("Here is your sudoku, Have fun XD")
-#     print ("Enter Ans in Same Format:")
-#     count=0
-#     num_sudoku = 10
-#     for i in range(num_sudoku):
-#         if sudoku_give():
-#             continue
-#         else:
-#             print("Try Again, Wrong Ans")
-#             sys.exit(0)
-#     sys.exit(0)
